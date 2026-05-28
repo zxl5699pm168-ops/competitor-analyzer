@@ -682,7 +682,22 @@ async function runBatch() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: userId, platform: batchTasks[i].platform, user_name: batchTasks[i].name })
             });
-            const d2 = await r2.json();
+            if (!r2.ok) {
+                html += `<div style="color:var(--danger);margin-bottom:16px">❌ ${batchTasks[i].name}: 请求超时或服务器错误 (HTTP ${r2.status})</div>`;
+                continue;
+            }
+            const text = await r2.text();
+            if (!text.trim()) {
+                html += `<div style="color:var(--danger);margin-bottom:16px">❌ ${batchTasks[i].name}: 服务器返回空响应（可能是超时）</div>`;
+                continue;
+            }
+            let d2;
+            try {
+                d2 = JSON.parse(text);
+            } catch (parseErr) {
+                html += `<div style="color:var(--danger);margin-bottom:16px">❌ ${batchTasks[i].name}: 解析响应失败</div>`;
+                continue;
+            }
             if (d2.error) {
                 html += `<div style="color:var(--danger);margin-bottom:16px">❌ ${batchTasks[i].name}: ${d2.error}</div>`;
                 continue;
