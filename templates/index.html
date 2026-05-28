@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>竞品分析工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #6366f1;
+            --primary-light: #eef2ff;
+            --primary-dark: #4f46e5;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,.08);
+            --radius: 12px;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+        /* Header */
+        .header { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; }
+        .header h1 { font-size: 22px; font-weight: 700; }
+        .header .subtitle { font-size: 13px; opacity: .85; margin-top: 2px; }
+        .header-actions { display: flex; gap: 10px; }
+        .header-actions button { background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); color: #fff; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; transition: all .2s; }
+        .header-actions button:hover { background: rgba(255,255,255,.25); }
+
+        /* Container */
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+
+        /* Search Section */
+        .search-section { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px; }
+        .search-section h2 { font-size: 16px; margin-bottom: 16px; color: var(--text); }
+        .search-row { display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 180px; }
+        .form-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; transition: border-color .2s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+
+        /* Buttons */
+        .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all .2s; display: inline-flex; align-items: center; gap: 6px; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-success:hover { background: #059669; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+        .btn-outline:hover { border-color: var(--primary); color: var(--primary); }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+        /* User Search Results */
+        .user-results { margin-top: 16px; display: none; }
+        .user-results.show { display: block; }
+        .user-card { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: all .2s; margin-bottom: 8px; }
+        .user-card:hover { border-color: var(--primary); background: var(--primary-light); }
+        .user-card.selected { border-color: var(--primary); background: var(--primary-light); box-shadow: 0 0 0 2px var(--primary); }
+        .user-card img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
+        .user-card .info { flex: 1; }
+        .user-card .name { font-weight: 600; font-size: 14px; }
+        .user-card .meta { font-size: 12px; color: var(--text-secondary); }
+        .user-card .platform-badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: var(--primary-light); color: var(--primary); font-weight: 600; }
+
+        /* Batch Section */
+        .batch-section { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px; }
+        .batch-section h2 { font-size: 16px; margin-bottom: 16px; }
+        .batch-textarea { width: 100%; min-height: 120px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; resize: vertical; font-family: monospace; }
+        .batch-textarea:focus { outline: none; border-color: var(--primary); }
+        .batch-help { font-size: 12px; color: var(--text-secondary); margin-top: 8px; }
+        .batch-tasks { margin-top: 12px; }
+        .batch-task-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg); border-radius: 6px; margin-bottom: 6px; font-size: 13px; }
+        .batch-task-item .platform-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+        .batch-task-item .remove-btn { margin-left: auto; color: var(--danger); cursor: pointer; font-size: 16px; }
+
+        /* Results Area */
+        .results-area { display: none; }
+        .results-area.show { display: block; }
+
+        /* Profile Card */
+        .profile-card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+        .profile-card img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; }
+        .profile-info { flex: 1; }
+        .profile-info .name { font-size: 20px; font-weight: 700; }
+        .profile-info .sig { font-size: 13px; color: var(--text-secondary); margin-top: 4px; }
+        .profile-stats { display: flex; gap: 24px; }
+        .profile-stat { text-align: center; }
+        .profile-stat .num { font-size: 18px; font-weight: 700; color: var(--primary); }
+        .profile-stat .label { font-size: 11px; color: var(--text-secondary); }
+
+        /* Video Grid */
+        .video-section { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px; }
+        .video-section h2 { font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+        .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+        .video-card { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: all .2s; cursor: pointer; }
+        .video-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+        .video-card .thumb { position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; background: #000; }
+        .video-card .thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .video-card .thumb .duration { position: absolute; bottom: 6px; right: 6px; background: rgba(0,0,0,.75); color: #fff; padding: 2px 6px; border-radius: 3px; font-size: 11px; }
+        .video-card .thumb .rank { position: absolute; top: 6px; left: 6px; background: var(--primary); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+        .video-card .info { padding: 10px 12px; }
+        .video-card .title { font-size: 13px; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; }
+        .video-card .stats { display: flex; gap: 10px; margin-top: 6px; font-size: 11px; color: var(--text-secondary); }
+        .video-card .music-tag { font-size: 11px; color: var(--warning); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* Analysis Section */
+        .analysis-section { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); margin-bottom: 24px; }
+        .analysis-section h2 { font-size: 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; }
+        .analysis-loading { text-align: center; padding: 40px; color: var(--text-secondary); }
+        .analysis-loading .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 12px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Analysis Cards */
+        .analysis-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 16px; }
+        .analysis-block { border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+        .analysis-block h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: var(--primary); display: flex; align-items: center; gap: 6px; }
+        .analysis-block p { font-size: 13px; line-height: 1.7; color: var(--text-secondary); }
+        .analysis-block ul { padding-left: 18px; font-size: 13px; line-height: 2; }
+        .analysis-block .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin: 2px; background: var(--primary-light); color: var(--primary); }
+
+        /* Top Video Analysis */
+        .top-video-analysis { border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px; }
+        .top-video-analysis .title { font-weight: 700; font-size: 14px; margin-bottom: 8px; }
+        .top-video-analysis .detail { font-size: 13px; line-height: 1.8; }
+        .top-video-analysis .detail .label { font-weight: 600; color: var(--text); }
+        .top-video-analysis .rewrite { background: var(--primary-light); border-radius: 6px; padding: 10px 14px; margin-top: 8px; font-size: 13px; line-height: 1.7; border-left: 3px solid var(--primary); }
+
+        /* SWOT Grid */
+        .swot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .swot-item { padding: 12px; border-radius: 8px; }
+        .swot-item h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+        .swot-item ul { padding-left: 16px; font-size: 12px; line-height: 2; }
+        .swot-s { background: #ecfdf5; }
+        .swot-s h4 { color: #059669; }
+        .swot-w { background: #fef2f2; }
+        .swot-w h4 { color: #dc2626; }
+        .swot-o { background: #eff6ff; }
+        .swot-o h4 { color: #2563eb; }
+        .swot-t { background: #fefce8; }
+
+        /* Action Items */
+        .action-items { counter-reset: action; }
+        .action-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .action-item::before { counter-increment: action; content: counter(action); min-width: 24px; height: 24px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+
+        /* Settings Modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 100; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; }
+        .modal { background: var(--card); border-radius: var(--radius); padding: 28px; width: 480px; max-width: 90vw; max-height: 85vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.15); }
+        .modal h2 { font-size: 18px; margin-bottom: 20px; }
+        .modal .form-group { margin-bottom: 14px; }
+        .modal .preset-btns { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+        .modal .preset-btn { padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; cursor: pointer; background: var(--bg); transition: all .2s; }
+        .modal .preset-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .modal .btn-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+        /* Loading overlay */
+        .loading-overlay { display: none; position: fixed; inset: 0; background: rgba(255,255,255,.85); z-index: 200; align-items: center; justify-content: center; flex-direction: column; }
+        .loading-overlay.show { display: flex; }
+        .loading-overlay .big-spinner { width: 48px; height: 48px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; }
+        .loading-overlay .text { margin-top: 16px; font-size: 15px; color: var(--text-secondary); }
+
+        /* Toast */
+        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; font-size: 13px; color: #fff; z-index: 300; transform: translateX(120%); transition: transform .3s; }
+        .toast.show { transform: translateX(0); }
+        .toast.error { background: var(--danger); }
+        .toast.success { background: var(--success); }
+
+        /* Platform colors */
+        .platform-douyin { background: #fff0f0; color: #fe2c55; }
+        .platform-xiaohongshu { background: #fff5f5; color: #ff2442; }
+        .platform-bilibili { background: #f0f5ff; color: #00a1d6; }
+        .platform-wechat { background: #f0fff4; color: #07c160; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>🔍 竞品分析工具</h1>
+        <div class="subtitle">抖音 · 小红书 · B站 · 视频号 — 深度竞品洞察</div>
+    </div>
+    <div class="header-actions">
+        <div id="keyStatus" style="display:flex;gap:6px;align-items:center;font-size:11px"></div>
+        <button onclick="openSettings()">⚙️ 设置</button>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Single Search -->
+    <div class="search-section">
+        <h2>🔎 搜索竞品账号</h2>
+        <div class="search-row">
+            <div class="form-group" style="flex:2">
+                <label>账号名称 / 关键词</label>
+                <input type="text" id="searchKeyword" placeholder="输入竞品账号名称..." onkeydown="if(event.key==='Enter')searchUser()">
+            </div>
+            <div class="form-group" style="flex:1">
+                <label>平台</label>
+                <select id="searchPlatform">
+                    <option value="douyin">抖音</option>
+                    <option value="xiaohongshu">小红书</option>
+                    <option value="bilibili">B站</option>
+                    <option value="wechat">视频号</option>
+                </select>
+            </div>
+            <button class="btn btn-primary" onclick="searchUser()" id="searchBtn">搜索账号</button>
+        </div>
+        <div class="user-results" id="userResults"></div>
+    </div>
+
+    <!-- Batch Upload -->
+    <div class="batch-section">
+        <h2>📋 批量分析任务</h2>
+        <div class="form-group">
+            <label>粘贴任务列表（格式：账号名称,平台）每行一个</label>
+            <textarea class="batch-textarea" id="batchInput" placeholder="罗永浩,抖音&#10;交个朋友,视频号&#10;影视飓风,B站"></textarea>
+        </div>
+        <div class="batch-help">示例：罗永浩,抖音 | 交个朋友,视频号 | 影视飓风,B站</div>
+        <div style="margin-top:12px;display:flex;gap:10px">
+            <button class="btn btn-outline" onclick="parseBatch()">解析任务</button>
+            <button class="btn btn-primary" onclick="runBatch()" id="batchBtn" disabled>批量分析</button>
+        </div>
+        <div class="batch-tasks" id="batchTasks"></div>
+    </div>
+
+    <!-- Results Area -->
+    <div class="results-area" id="resultsArea">
+        <!-- Profile -->
+        <div class="profile-card" id="profileCard"></div>
+
+        <!-- Videos -->
+        <div class="video-section">
+            <h2>
+                📹 视频作品
+                <div style="display:flex;gap:8px">
+                    <button class="btn btn-success btn-sm" onclick="runAIAnalysis()" id="aiBtn">🤖 AI深度分析</button>
+                    <button class="btn btn-outline btn-sm" onclick="exportReport()">📊 导出报告</button>
+                </div>
+            </h2>
+            <div class="video-grid" id="videoGrid"></div>
+        </div>
+
+        <!-- AI Analysis -->
+        <div class="analysis-section" id="analysisSection" style="display:none">
+            <h2>🧠 AI 分析报告</h2>
+            <div id="analysisContent"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+    <div class="modal">
+        <h2>⚙️ 设置</h2>
+        <div class="form-group">
+            <label>TikHub API Key <span id="tikhubStatus" style="font-weight:normal"></span></label>
+            <input type="password" id="tikhubKey" placeholder="粘贴你的 TikHub API Key">
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">💡 已保存的Key无需重新输入，留空即可保留原值</div>
+        </div>
+        <hr style="margin:16px 0;border-color:var(--border)">
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;font-weight:600">LLM 配置（AI分析功能需要）</div>
+        <div class="preset-btns">
+            <button class="preset-btn" onclick="setLLMPreset('deepseek')">DeepSeek</button>
+            <button class="preset-btn" onclick="setLLMPreset('qwen')">通义千问</button>
+            <button class="preset-btn" onclick="setLLMPreset('openai')">OpenAI</button>
+        </div>
+        <div class="form-group">
+            <label>LLM API URL</label>
+            <input type="text" id="llmApiUrl" placeholder="https://api.deepseek.com/v1/chat/completions">
+        </div>
+        <div class="form-group">
+            <label>LLM API Key <span id="llmStatus" style="font-weight:normal"></span></label>
+            <input type="password" id="llmKey" placeholder="粘贴你的 LLM API Key">
+            <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">💡 已保存的Key无需重新输入，留空即可保留原值</div>
+        </div>
+        <div class="form-group">
+            <label>LLM Model</label>
+            <input type="text" id="llmModel" placeholder="deepseek-chat">
+        </div>
+        <div class="btn-row">
+            <button class="btn btn-outline" onclick="closeSettings()">取消</button>
+            <button class="btn btn-primary" onclick="saveSettings()">保存</button>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="big-spinner"></div>
+    <div class="text" id="loadingText">正在分析...</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// State
+let currentUser = null;
+let currentProfile = null;
+let currentVideos = [];
+let currentAnalysis = null;
+let batchTasks = [];
+let llmConfig = { key: '', url: '', model: '' };
+
+// Platform names
+const PLATFORM_NAMES = { douyin: '抖音', xiaohongshu: '小红书', bilibili: 'B站', wechat: '视频号' };
+
+// Init
+async function init() {
+    try {
+        const r = await fetch('/api/settings');
+        const d = await r.json();
+        llmConfig.url = d.llm_api_url || '';
+        llmConfig.model = d.llm_model || '';
+        // Mark key status — keys are stored on backend, frontend just knows they exist
+        llmConfig.keySet = d.llm_key_set || false;
+        llmConfig.tikhubKeySet = d.tikhub_key_set || false;
+
+        // Update header key status indicator
+        const statusEl = document.getElementById('keyStatus');
+        statusEl.innerHTML = `
+            <span style="padding:3px 8px;border-radius:4px;${d.tikhub_key_set ? 'background:#ecfdf5;color:#059669' : 'background:#fef2f2;color:#dc2626'}">${d.tikhub_key_set ? '✅ TikHub' : '❌ TikHub'}</span>
+            <span style="padding:3px 8px;border-radius:4px;${d.llm_key_set ? 'background:#ecfdf5;color:#059669' : 'background:#fef2f2;color:#dc2626'}">${d.llm_key_set ? '✅ AI' : '❌ AI'}</span>
+        `;
+
+        // Update settings modal — show saved status next to inputs
+        if (d.tikhub_key_masked) {
+            document.getElementById('tikhubKey').placeholder = '已保存: ' + d.tikhub_key_masked + ' (留空保留原值)';
+            document.getElementById('tikhubKey').dataset.saved = 'true';
+            document.getElementById('tikhubStatus').textContent = '✅ 已配置';
+            document.getElementById('tikhubStatus').style.color = '#059669';
+        } else {
+            document.getElementById('tikhubStatus').textContent = '❌ 未配置';
+            document.getElementById('tikhubStatus').style.color = '#dc2626';
+        }
+        if (d.llm_key_masked) {
+            document.getElementById('llmKey').placeholder = '已保存: ' + d.llm_key_masked + ' (留空保留原值)';
+            document.getElementById('llmKey').dataset.saved = 'true';
+            document.getElementById('llmStatus').textContent = '✅ 已配置';
+            document.getElementById('llmStatus').style.color = '#059669';
+        } else {
+            document.getElementById('llmStatus').textContent = '❌ 未配置';
+            document.getElementById('llmStatus').style.color = '#dc2626';
+        }
+        if (d.llm_api_url) {
+            document.getElementById('llmApiUrl').value = d.llm_api_url;
+        }
+        if (d.llm_model) {
+            document.getElementById('llmModel').value = d.llm_model;
+        }
+    } catch(e) {
+        console.warn('加载设置失败:', e);
+    }
+}
+
+// Search user
+async function searchUser() {
+    const keyword = document.getElementById('searchKeyword').value.trim();
+    const platform = document.getElementById('searchPlatform').value;
+    if (!keyword) return showToast('请输入账号名称', 'error');
+
+    const btn = document.getElementById('searchBtn');
+    btn.disabled = true;
+    btn.textContent = '搜索中...';
+
+    try {
+        const r = await fetch('/api/search_user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ keyword, platform })
+        });
+        const d = await r.json();
+        if (d.error) { showToast(d.error, 'error'); return; }
+        if (!d.users || d.users.length === 0) { showToast('未找到相关账号', 'error'); return; }
+
+        const container = document.getElementById('userResults');
+        container.innerHTML = d.users.map((u, i) => `
+            <div class="user-card" onclick="selectUser(this, '${u.id}', '${platform}', '${(u.name || '').replace(/'/g, "\\'")}')">
+                ${u.avatar ? `<img src="${u.avatar}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:44px;height:44px;border-radius:50%;background:var(--primary-light);display:none;align-items:center;justify-content:center;font-size:18px">👤</div>` : '<div style="width:44px;height:44px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:18px">👤</div>'}
+                <div class="info">
+                    <div class="name">${u.name || '未知'}</div>
+                    <div class="meta">
+                        ${u.platform_id ? `<span style="font-weight:600;color:var(--primary)">${u.platform_id_label || 'ID'}: ${u.platform_id}</span>` : `<span>ID: ${u.id || 'N/A'}</span>`}
+                        ${u.red_id && u.platform_id !== u.red_id ? `<span> | 小红书号: ${u.red_id}</span>` : ''}
+                        <span> | 粉丝: ${typeof u.fans === 'number' ? u.fans.toLocaleString() : (u.fans || 'N/A')}</span>
+                        ${u.posts ? `<span> | 作品: ${u.posts}</span>` : ''}
+                        ${u.likes ? `<span> | 获赞: ${u.likes}</span>` : ''}
+                    </div>
+                </div>
+                <span class="platform-badge platform-${platform}">${PLATFORM_NAMES[platform]}</span>
+            </div>
+        `).join('');
+        container.classList.add('show');
+    } catch(e) {
+        showToast('搜索失败: ' + (e.message || '网络错误，请检查服务是否启动'), 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '搜索账号';
+    }
+}
+
+// Select user
+async function selectUser(el, userId, platform, userName) {
+    document.querySelectorAll('.user-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+
+    currentUser = { id: userId, platform, name: userName };
+    await analyzeUser(userId, platform, userName);
+}
+
+// Analyze user
+async function analyzeUser(userId, platform, userName) {
+    showLoading('正在获取账号数据和视频列表...');
+
+    try {
+        const r = await fetch('/api/analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, platform, user_name: userName, video_count: 30 })
+        });
+        const d = await r.json();
+        if (d.error) { hideLoading(); showToast(d.error, 'error'); return; }
+
+        currentProfile = d.profile;
+        currentVideos = d.videos || [];
+        currentAnalysis = null;
+
+        renderProfile(d.profile);
+        renderVideos(d.videos);
+        document.getElementById('resultsArea').classList.add('show');
+        document.getElementById('analysisSection').style.display = 'none';
+        hideLoading();
+    } catch(e) {
+        hideLoading();
+        showToast('分析失败: ' + e.message, 'error');
+    }
+}
+
+// Render profile
+function renderProfile(p) {
+    document.getElementById('profileCard').innerHTML = `
+        ${p.avatar ? `<img src="${p.avatar}" alt="">` : '<div style="width:72px;height:72px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:28px">👤</div>'}
+        <div class="profile-info">
+            <div class="name">${p.name || '未知'}</div>
+            <div class="sig">${p.signature || p.official_verify || ''}</div>
+        </div>
+        <div class="profile-stats">
+            <div class="profile-stat"><div class="num">${formatNum(p.fans)}</div><div class="label">粉丝</div></div>
+            <div class="profile-stat"><div class="num">${formatNum(p.likes)}</div><div class="label">获赞</div></div>
+            <div class="profile-stat"><div class="num">${formatNum(p.posts)}</div><div class="label">作品</div></div>
+            <div class="profile-stat"><div class="num">${formatNum(p.following)}</div><div class="label">关注</div></div>
+        </div>
+        <span class="platform-badge platform-${p.platform}" style="font-size:13px">${PLATFORM_NAMES[p.platform] || p.platform}</span>
+    `;
+}
+
+// Render videos
+function renderVideos(videos) {
+    // Sort by likes
+    const sorted = [...videos].sort((a, b) => (parseInt(b.likeCount) || 0) - (parseInt(a.likeCount) || 0));
+    document.getElementById('videoGrid').innerHTML = sorted.map((v, i) => `
+        <div class="video-card" onclick="window.open('${v.url}','_blank')">
+            <div class="thumb">
+                ${v.thumbnail ? `<img src="${v.thumbnail}" alt="" loading="lazy" onerror="this.onerror=null;this.style.display='none';this.parentElement.querySelector('.thumb-fallback').style.display='flex'">` : ''}
+                <div class="thumb-fallback" style="width:100%;height:100%;display:${v.thumbnail ? 'none' : 'flex'};align-items:center;justify-content:center;background:#1e293b;color:#94a3b8;font-size:32px">🎬</div>
+                ${v.durationFormatted ? `<span class="duration">${v.durationFormatted}</span>` : ''}
+                ${i < 5 ? `<span class="rank">TOP${i + 1}</span>` : ''}
+            </div>
+            <div class="info">
+                <div class="title">${v.title || '无标题'}</div>
+                <div class="stats">
+                    <span>❤️ ${formatNum(v.likeCount)}</span>
+                    <span>💬 ${formatNum(v.commentCount)}</span>
+                    ${v.shareCount ? `<span>🔗 ${formatNum(v.shareCount)}</span>` : ''}
+                    ${v.collectCount ? `<span>⭐ ${formatNum(v.collectCount)}</span>` : ''}
+                </div>
+                ${v.music_title ? `<div class="music-tag">🎵 ${v.music_title}${v.music_author ? ' - ' + v.music_author : ''}</div>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+// AI Analysis
+async function runAIAnalysis() {
+    if (!currentProfile || !currentVideos.length) return showToast('请先分析一个账号', 'error');
+
+    const btn = document.getElementById('aiBtn');
+    btn.disabled = true;
+    btn.textContent = '🤖 分析中...';
+
+    const section = document.getElementById('analysisSection');
+    section.style.display = 'block';
+    document.getElementById('analysisContent').innerHTML = '<div class="analysis-loading"><div class="spinner"></div><div>AI 正在深度分析，请稍候（约30-60秒）...</div></div>';
+    section.scrollIntoView({ behavior: 'smooth' });
+
+    try {
+        const r = await fetch('/api/ai_analyze', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ profile: currentProfile, videos: currentVideos, platform: currentProfile.platform })
+        });
+        const d = await r.json();
+        if (d.error) { showToast(d.error, 'error'); document.getElementById('analysisContent').innerHTML = `<p style="color:var(--danger)">${d.error}</p>`; return; }
+
+        currentAnalysis = d.analysis;
+        renderAnalysis(d.analysis);
+    } catch(e) {
+        showToast('AI分析失败: ' + e.message, 'error');
+        document.getElementById('analysisContent').innerHTML = `<p style="color:var(--danger)">分析失败: ${e.message}</p>`;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '🤖 AI深度分析';
+    }
+}
+
+// Render analysis
+function renderAnalysis(a) {
+    let html = '';
+
+    // Content Strategy
+    const cs = a.content_strategy;
+    if (cs) {
+        html += `<div class="analysis-grid">
+            <div class="analysis-block">
+                <h3>🎯 内容策略</h3>
+                <p>${cs.summary || ''}</p>
+                <div style="margin-top:8px">${(cs.content_types || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>
+                <p style="margin-top:8px"><strong>发布频率:</strong> ${cs.posting_frequency || 'N/A'}</p>
+                <p><strong>内容支柱:</strong></p>
+                <ul>${(cs.content_pillars || []).map(p => `<li>${p}</li>`).join('')}</ul>
+                ${cs.target_audience ? `<p style="margin-top:6px"><strong>🎯 目标受众:</strong> ${cs.target_audience}</p>` : ''}
+                ${cs.tone_and_style ? `<p style="margin-top:4px"><strong>🎨 语言风格:</strong> ${cs.tone_and_style}</p>` : ''}
+            </div>
+            <div class="analysis-block">
+                <h3>🎵 音效分析</h3>
+                ${(a.audio_analysis || {}).summary ? `<p>${a.audio_analysis.summary}</p>` : ''}
+                ${(a.audio_analysis || {}).audio_patterns ? `<p style="margin-top:6px"><strong>音频规律:</strong> ${a.audio_analysis.audio_patterns}</p>` : ''}
+                ${(a.audio_analysis || {}).recommendations ? `<ul style="margin-top:6px">${a.audio_analysis.recommendations.map(r => `<li>${r}</li>`).join('')}</ul>` : ''}
+            </div>
+        </div>`;
+    }
+
+    // Data Insights (new section)
+    const di = a.data_insights;
+    if (di) {
+        html += `<div class="analysis-grid" style="margin-top:16px">
+            <div class="analysis-block">
+                <h3>📊 数据洞察</h3>
+                ${di.engagement_pattern ? `<p><strong>互动规律:</strong> ${di.engagement_pattern}</p>` : ''}
+                ${di.content_gap ? `<p style="margin-top:6px"><strong>内容空白区:</strong> ${di.content_gap}</p>` : ''}
+                ${di.growth_potential ? `<p style="margin-top:6px"><strong>增长潜力:</strong> ${di.growth_potential}</p>` : ''}
+            </div>
+        </div>`;
+    }
+
+    // Top Videos Analysis
+    const topVids = a.top_videos_analysis || [];
+    if (topVids.length) {
+        html += `<div class="analysis-block" style="margin-top:16px">
+            <h3>🔥 爆款视频文案结构 & 仿写</h3>
+            ${topVids.map(v => {
+                // Use video data embedded by backend (more reliable than title matching)
+                const thumbHtml = v.thumbnail
+                    ? `<img src="${v.thumbnail}" style="width:100%;border-radius:6px;object-fit:cover;aspect-ratio:16/9" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="width:100%;aspect-ratio:16/9;display:none;align-items:center;justify-content:center;background:#1e293b;border-radius:6px;color:#94a3b8;font-size:32px">🎬</div>`
+                    : '<div style="width:100%;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;background:#1e293b;border-radius:6px;color:#94a3b8;font-size:32px">🎬</div>';
+                const statsHtml = `
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;margin:6px 0;font-size:12px;color:var(--text-secondary)">
+                        ${v.likeCount ? `<span>❤️ ${formatNum(v.likeCount)}</span>` : ''}
+                        ${v.commentCount ? `<span>💬 ${formatNum(v.commentCount)}</span>` : ''}
+                        ${v.shareCount ? `<span>🔗 ${formatNum(v.shareCount)}</span>` : ''}
+                        ${v.collectCount ? `<span>⭐ ${formatNum(v.collectCount)}</span>` : ''}
+                        ${v.viewCount ? `<span>👁️ ${formatNum(v.viewCount)}</span>` : ''}
+                        ${v.durationFormatted ? `<span>⏱️ ${v.durationFormatted}</span>` : ''}
+                        ${v.publishedAt ? `<span>📅 ${v.publishedAt}</span>` : ''}
+                    </div>
+                `;
+                return `
+                <div class="top-video-analysis">
+                    <div style="display:flex;gap:12px;align-items:flex-start">
+                        <div style="flex-shrink:0;width:200px">${thumbHtml}</div>
+                        <div style="flex:1;min-width:0">
+                            <div class="title">${v.title || '视频'}</div>
+                            ${statsHtml}
+                        </div>
+                    </div>
+                    <div class="detail" style="margin-top:10px">
+                        <div style="margin-bottom:6px"><span class="label">🔥 爆款原因:</span> ${v.why_viral || ''}</div>
+                        <div style="margin-bottom:6px"><span class="label">📝 文案结构拆解:</span>
+                            <div style="background:#f8fafc;border-radius:6px;padding:10px;margin-top:4px;white-space:pre-line;line-height:1.8">${(v.copy_structure || '').replace(/\\n/g, '\n')}</div>
+                        </div>
+                        ${(v.key_techniques && v.key_techniques.length) ? `<div style="margin-bottom:6px"><span class="label">💡 关键技巧:</span><div style="margin-top:4px">${v.key_techniques.map(t => `<span class="tag" style="margin:2px">${t}</span>`).join('')}</div></div>` : ''}
+                    </div>
+                    <div class="rewrite">✍️ <strong>仿写文案:</strong><br>${(v.rewrite_copy || '').replace(/\\n/g, '<br>')}</div>
+                </div>
+            `;}).join('')}
+        </div>`;
+    }
+
+    // SWOT
+    html += `<div class="analysis-block" style="margin-top:16px">
+        <h3>💡 SWOT 分析</h3>
+        <div class="swot-grid">
+            <div class="swot-item swot-s"><h4>✅ 优势</h4><ul>${(a.strengths || []).map(s => `<li>${s}</li>`).join('')}</ul></div>
+            <div class="swot-item swot-w"><h4>⚠️ 劣势</h4><ul>${(a.weaknesses || []).map(s => `<li>${s}</li>`).join('')}</ul></div>
+            <div class="swot-item swot-o"><h4>🚀 机会</h4><ul>${(a.opportunities || []).map(s => `<li>${s}</li>`).join('')}</ul></div>
+            <div class="swot-item swot-t"><h4>📝 行动建议</h4><div class="action-items">${(a.action_items || []).map(s => `<div class="action-item">${s}</div>`).join('')}</div></div>
+        </div>
+    </div>`;
+
+    document.getElementById('analysisContent').innerHTML = html;
+}
+
+// Batch
+function parseBatch() {
+    const text = document.getElementById('batchInput').value.trim();
+    if (!text) return showToast('请粘贴任务列表', 'error');
+
+    const lines = text.split('\n').filter(l => l.trim());
+    batchTasks = [];
+    const container = document.getElementById('batchTasks');
+
+    lines.forEach(line => {
+        const parts = line.split(',').map(s => s.trim());
+        if (parts.length >= 2) {
+            const platform = parts[1].toLowerCase();
+            const platformMap = { '抖音': 'douyin', '小红书': 'xiaohongshu', 'b站': 'bilibili', 'bilibili': 'bilibili', '视频号': 'wechat' };
+            const p = platformMap[platform] || platform;
+            if (['douyin', 'xiaohongshu', 'bilibili', 'wechat'].includes(p)) {
+                batchTasks.push({ name: parts[0], platform: p });
+            }
+        }
+    });
+
+    if (!batchTasks.length) return showToast('未解析到有效任务，请检查格式', 'error');
+
+    container.innerHTML = batchTasks.map((t, i) => `
+        <div class="batch-task-item">
+            <span class="platform-tag platform-${t.platform}">${PLATFORM_NAMES[t.platform]}</span>
+            <span>${t.name}</span>
+            <span class="remove-btn" onclick="removeBatchTask(${i})">✕</span>
+        </div>
+    `).join('');
+
+    document.getElementById('batchBtn').disabled = false;
+    showToast(`解析成功: ${batchTasks.length} 个任务`, 'success');
+}
+
+function removeBatchTask(idx) {
+    batchTasks.splice(idx, 1);
+    parseBatch();
+}
+
+async function runBatch() {
+    if (!batchTasks.length) return;
+    // For batch, analyze each one sequentially
+    showLoading('批量分析中，请耐心等待...');
+    let html = '';
+    for (let i = 0; i < batchTasks.length; i++) {
+        document.getElementById('loadingText').textContent = `正在分析 ${i+1}/${batchTasks.length}: ${batchTasks[i].name}...`;
+        try {
+            const r = await fetch('/api/search_user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword: batchTasks[i].name, platform: batchTasks[i].platform })
+            });
+            const d = await r.json();
+            if (d.error || !d.users || !d.users.length) {
+                html += `<div style="color:var(--danger);margin-bottom:16px">❌ ${batchTasks[i].name}(${PLATFORM_NAMES[batchTasks[i].platform]}): ${d.error || '未找到账号'}</div>`;
+                continue;
+            }
+            const userId = d.users[0].id;
+            const r2 = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, platform: batchTasks[i].platform, user_name: batchTasks[i].name })
+            });
+            const d2 = await r2.json();
+            if (d2.error) {
+                html += `<div style="color:var(--danger);margin-bottom:16px">❌ ${batchTasks[i].name}: ${d2.error}</div>`;
+                continue;
+            }
+            // Show summary
+            const p = d2.profile;
+            const topVid = (d2.videos || []).sort((a,b) => (parseInt(b.likeCount)||0) - (parseInt(a.likeCount)||0))[0];
+            html += `<div class="profile-card" style="margin-bottom:12px">
+                ${p.avatar ? `<img src="${p.avatar}" style="width:48px;height:48px" alt="">` : ''}
+                <div class="profile-info">
+                    <div class="name" style="font-size:16px">${p.name}</div>
+                    <div class="meta">粉丝 ${formatNum(p.fans)} | 作品 ${formatNum(p.posts)} | 获赞 ${formatNum(p.likes)}</div>
+                </div>
+                <span class="platform-badge platform-${p.platform}">${PLATFORM_NAMES[p.platform]}</span>
+            </div>`;
+            if (topVid) {
+                html += `<div style="font-size:13px;margin-bottom:16px;padding-left:12px;color:var(--text-secondary)">
+                    🔥 最热: ${topVid.title} (❤️${formatNum(topVid.likeCount)})
+                </div>`;
+            }
+        } catch(e) {
+            html += `<div style="color:var(--danger);margin-bottom:16px">❌ ${batchTasks[i].name}: ${e.message}</div>`;
+        }
+    }
+    hideLoading();
+    document.getElementById('resultsArea').classList.add('show');
+    document.getElementById('profileCard').innerHTML = `<h2 style="width:100%">📋 批量分析结果</h2>`;
+    document.getElementById('videoGrid').innerHTML = html;
+}
+
+// Export
+async function exportReport() {
+    if (!currentProfile) return showToast('请先分析一个账号', 'error');
+    try {
+        const r = await fetch('/api/export_report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ profile: currentProfile, videos: currentVideos, analysis: currentAnalysis, platform: currentProfile.platform })
+        });
+        if (!r.ok) { const d = await r.json(); showToast(d.error || '导出失败', 'error'); return; }
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `竞品分析_${currentProfile.name || 'report'}.xlsx`; a.click();
+        URL.revokeObjectURL(url);
+        showToast('报告已下载', 'success');
+    } catch(e) {
+        showToast('导出失败: ' + e.message, 'error');
+    }
+}
+
+// Settings
+function openSettings() {
+    document.getElementById('settingsModal').classList.add('show');
+}
+function closeSettings() {
+    document.getElementById('settingsModal').classList.remove('show');
+}
+function setLLMPreset(type) {
+    const presets = {
+        deepseek: { url: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-chat' },
+        qwen: { url: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model: 'qwen-plus' },
+        openai: { url: 'https://api.openai.com/v1/chat/completions', model: 'gpt-4o-mini' },
+    };
+    const p = presets[type];
+    if (p) {
+        document.getElementById('llmApiUrl').value = p.url;
+        document.getElementById('llmModel').value = p.model;
+    }
+}
+async function saveSettings() {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '保存中...';
+    try {
+        const tikhubVal = document.getElementById('tikhubKey').value.trim();
+        const llmKeyVal = document.getElementById('llmKey').value.trim();
+        const payload = {
+            llm_api_url: document.getElementById('llmApiUrl').value.trim(),
+            llm_model: document.getElementById('llmModel').value.trim(),
+        };
+        // Only send key if user actually typed something (don't overwrite with empty)
+        if (tikhubVal) payload.tikhub_key = tikhubVal;
+        if (llmKeyVal) payload.llm_key = llmKeyVal;
+
+        const r = await fetch('/api/settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!r.ok) {
+            showToast('保存失败: HTTP ' + r.status, 'error');
+            return;
+        }
+        const d = await r.json();
+        if (d.success) {
+            llmConfig.url = document.getElementById('llmApiUrl').value.trim();
+            llmConfig.model = document.getElementById('llmModel').value.trim();
+            if (llmKeyVal) llmConfig.key = llmKeyVal;
+            // Refresh status
+            await init();
+            showToast('设置已保存', 'success');
+            closeSettings();
+        } else {
+            showToast('保存失败: ' + (d.error || '未知错误'), 'error');
+        }
+    } catch(e) {
+        showToast('保存失败: ' + e.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '保存';
+    }
+}
+
+// Helpers
+function formatNum(n) {
+    try {
+        n = parseInt(n);
+        if (isNaN(n)) return '0';
+        if (n >= 100000000) return (n / 100000000).toFixed(1) + '亿';
+        if (n >= 10000) return (n / 10000).toFixed(1) + '万';
+        return n.toLocaleString();
+    } catch { return String(n); }
+}
+function showLoading(text) {
+    document.getElementById('loadingText').textContent = text || '加载中...';
+    document.getElementById('loadingOverlay').classList.add('show');
+}
+function hideLoading() {
+    document.getElementById('loadingOverlay').classList.remove('show');
+}
+function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + (type || 'success');
+    setTimeout(() => t.classList.add('show'), 10);
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+init();
+</script>
+</body>
+</html>
